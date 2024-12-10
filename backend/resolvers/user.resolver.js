@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 
-import { users } from "../dummyData/data.js";
+import Transaction from "../models/transaction.model.js";
 import User from "../models/user.model.js";
 
 const userResolver = {
@@ -35,13 +35,11 @@ const userResolver = {
         await newUser.save();
         await context.login(newUser);
         return newUser;
-      }
-      catch (err) {
+      } catch (err) {
         console.error("Error in signUp: ", err);
         throw new Error(err.message || "Internal server error");
       }
     },
-
     login: async (_, { input }, context) => {
       try {
         const { username, password } = input;
@@ -50,8 +48,7 @@ const userResolver = {
 
         await context.login(user);
         return user;
-      }
-      catch (err) {
+      } catch (err) {
         console.error("Error in login:", err);
         throw new Error(err.message || "Internal server error");
       }
@@ -65,8 +62,7 @@ const userResolver = {
         context.res.clearCookie("connect.sid");
 
         return { message: "Logged out successfully" };
-      }
-      catch (err) {
+      } catch (err) {
         console.error("Error in logout:", err);
         throw new Error(err.message || "Internal server error");
       }
@@ -77,8 +73,7 @@ const userResolver = {
       try {
         const user = await context.getUser();
         return user;
-      }
-      catch (err) {
+      } catch (err) {
         console.error("Error in authUser: ", err);
         throw new Error("Internal server error");
       }
@@ -87,14 +82,23 @@ const userResolver = {
       try {
         const user = await User.findById(userId);
         return user;
-      }
-      catch (err) {
+      } catch (err) {
         console.error("Error in user query:", err);
         throw new Error(err.message || "Error getting user");
       }
     },
   },
-  // TODO => ADD USER/TRANSACTION RELATION
+  User: {          //Adding the relationship between User and Transactions
+    transactions: async (parent) => {
+      try {
+        const transactions = await Transaction.find({ userId: parent._id });
+        return transactions;
+      } catch (err) {
+        console.log("Error in user.transactions resolver: ", err);
+        throw new Error(err.message || "Internal server error");
+      }
+    },
+  },
 };
 
 export default userResolver;

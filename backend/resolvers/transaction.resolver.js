@@ -1,4 +1,5 @@
 import Transaction from "../models/transaction.model.js";
+import User from "../models/user.model.js";
 
 const transactionResolver = {
   Query: {
@@ -9,8 +10,7 @@ const transactionResolver = {
 
         const transactions = await Transaction.find({ userId });
         return transactions;
-      }
-      catch (err) {
+      } catch (err) {
         console.error("Error getting transactions:", err);
         throw new Error("Error getting transactions");
       }
@@ -19,13 +19,41 @@ const transactionResolver = {
       try {
         const transaction = await Transaction.findById(transactionId);
         return transaction;
-      }
-      catch (err) {
+      } catch (err) {
         console.error("Error getting transaction:", err);
         throw new Error("Error getting transaction");
       }
     },
-    // TODO => ADD categoryStatistics query
+    categoryStatistics: async (_, __, context) => {
+      if (!context.getUser()) throw new Error("Unauthorized");
+
+      const userId = context.getUser()._id;
+      const transactions = await Transaction.find({ userId });
+      const categoryMap = {};
+
+      // Example:
+      // const transactions = [
+      // 	{ category: "expense", amount: 50 },
+      // 	{ category: "expense", amount: 75 },
+      // 	{ category: "investment", amount: 100 },
+      // 	{ category: "saving", amount: 30 },
+      // 	{ category: "saving", amount: 20 }
+      // ];
+
+      transactions.forEach((transaction) => {
+        if (!categoryMap[transaction.category]) {
+          categoryMap[transaction.category] = 0;
+        }
+        categoryMap[transaction.category] += transaction.amount;
+      });
+
+      // Example:
+      // categoryMap = { expense: 125, investment: 100, saving: 50 }   
+
+      return Object.entries(categoryMap).map(([category, totalAmount]) => ({ category, totalAmount }));
+      // Example:
+      // return [ { category: "expense", totalAmount: 125 }, { category: "investment", totalAmount: 100 }, { category: "saving", totalAmount: 50 } ]
+    },
   },
   Mutation: {
     createTransaction: async (_, { input }, context) => {
@@ -36,8 +64,7 @@ const transactionResolver = {
         });
         await newTransaction.save();
         return newTransaction;
-      }
-      catch (err) {
+      } catch (err) {
         console.error("Error creating transaction:", err);
         throw new Error("Error creating transaction");
       }
@@ -48,8 +75,7 @@ const transactionResolver = {
           new: true,
         });
         return updatedTransaction;
-      }
-      catch (err) {
+      } catch (err) {
         console.error("Error updating transaction:", err);
         throw new Error("Error updating transaction");
       }
@@ -58,14 +84,24 @@ const transactionResolver = {
       try {
         const deletedTransaction = await Transaction.findByIdAndDelete(transactionId);
         return deletedTransaction;
-      }
-      catch (err) {
+      } catch (err) {
         console.error("Error deleting transaction:", err);
         throw new Error("Error deleting transaction");
       }
     },
   },
-  // TODO => ADD TRANSACTION/USER RELATIONSHIP
+  Transaction: {
+    user: async (parent) => {
+      const userId = parent.userId;
+      try {
+        const user = await User.findById(userId);
+        return user;
+      } catch (err) {
+        console.error("Error getting user:", err);
+        throw new Error("Error getting user");
+      }
+    },
+  },
 };
 
 export default transactionResolver;
