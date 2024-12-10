@@ -11,11 +11,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 import Header from "./components/ui/Header";
 
 export default function App() {
-  const { loading, data, error } = useQuery(GET_AUTHENTICATED_USER);
-
-  console.log("Loading:", loading);
-  console.log("Authenticated user:", data);
-  console.log("Error:", error);
+  const { loading, data } = useQuery(GET_AUTHENTICATED_USER);
 
   if (loading) return null;
 
